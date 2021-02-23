@@ -166,11 +166,15 @@ class _VRoutePath {
   /// The list (ordered) of the [VRouteElement]s composing this route
   final List<VRouteElement> vRouteElements;
 
+  // TODO: write this
+  Future<Map<String, String>> Function(BuildContext context) pathParametersBuilder;
+
   _VRoutePath({
     this.name,
     required this.pathRegExp,
     required this.path,
     required this.parameters,
     required this.vRouteElements,
+    required this.pathParametersBuilder,
   });
 }

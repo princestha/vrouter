@@ -27,6 +27,9 @@ abstract class VRouteElement {
   /// |     .*          |  every path  |                 -
   String? get path;
 
+  // TODO: write this
+  Future<Map<String, String>> Function(BuildContext context)? get pathParametersBuilder;
+
   /// A name for the route which will allow you to easily navigate to it
   /// using [VRouterData.of(context).pushNamed]
   ///
@@ -83,6 +86,9 @@ abstract class VRouteElement {
   ///   * [VRouter.buildTransition] for default transitions for all routes
   Widget Function(Animation<double> animation,
       Animation<double> secondaryAnimation, Widget child)? get buildTransition;
+
+  // TODO: write explanations
+  Future<bool> Function(BuildContext context) get validate;
 
   /// This is called before the url is updated but after all beforeLeave are called
   ///
@@ -210,6 +216,9 @@ abstract class VRouteElement {
   /// be the widget holding the data of this [VRouteElement]
   /// It is created automatically
   GlobalKey<_RouteElementWidgetState>? get stateKey;
+
+  // TODO: describe this
+  static Future<bool> _defaultCondition(BuildContext context) => Future.value(true);
 }
 
 @immutable
@@ -229,6 +238,10 @@ class VStacked extends VRouteElement {
   /// See [VRouteElement.path]
   @override
   final String? path;
+
+  /// See [VRouteElement.pathParametersBuilder]
+  @override
+  final Future<Map<String, String>> Function(BuildContext context)? pathParametersBuilder;
 
   /// See [VRouteElement.name]
   @override
@@ -254,6 +267,10 @@ class VStacked extends VRouteElement {
   @override
   final Widget Function(Animation<double> animation,
       Animation<double> secondaryAnimation, Widget child)? buildTransition;
+
+  /// See [VRouteElement.validate]
+  @override
+  final Future<bool> Function(BuildContext context) validate;
 
   /// See [VRouteElement.beforeEnter]
   @override
@@ -287,9 +304,11 @@ class VStacked extends VRouteElement {
     this.widgetBuilder,
     this.key,
     this.path,
+    this.pathParametersBuilder,
     this.name,
     this.subroutes,
     this.aliases,
+    this.validate = VRouteElement._defaultCondition,
     this.beforeEnter,
     this.beforeLeave,
     this.afterEnter,
@@ -417,6 +436,10 @@ class VChild extends VRouteElement {
   @override
   final String? path;
 
+  /// See [VRouteElement.pathParametersBuilder]
+  @override
+  final Future<Map<String, String>> Function(BuildContext context)? pathParametersBuilder;
+
   /// See [VRouteElement.name]
   @override
   final String? name;
@@ -441,6 +464,10 @@ class VChild extends VRouteElement {
   @override
   final Widget Function(Animation<double> animation,
       Animation<double> secondaryAnimation, Widget child)? buildTransition;
+
+  /// See [VRouteElement.validate]
+  @override
+  final Future<bool> Function(BuildContext context) validate;
 
   /// See [VRouteElement.beforeEnter]
   @override
@@ -473,10 +500,11 @@ class VChild extends VRouteElement {
     this.widget,
     this.widgetBuilder,
     this.key,
-    this.path,
+    this.path,this.pathParametersBuilder,
     this.name,
     this.subroutes,
     this.aliases,
+    this.validate = VRouteElement._defaultCondition,
     this.beforeEnter,
     this.beforeLeave,
     this.afterEnter,
@@ -588,6 +616,10 @@ class VChild extends VRouteElement {
 
 @immutable
 class VRouteRedirector extends VRouteElement {
+  /// See [VRouteElement.validate]
+  @override
+  final Future<bool> Function(BuildContext context) validate;
+
   /// See [VRouteElement.beforeEnter]
   @override
   final Future<void> Function(VRedirector vRedirector)? beforeEnter;
@@ -595,6 +627,10 @@ class VRouteRedirector extends VRouteElement {
   /// See [VRouteElement.path]
   @override
   final String path;
+
+  /// See [VRouteElement.pathParametersBuilder]
+  @override
+  Future<Map<String, String>> Function(BuildContext context)? get pathParametersBuilder => null;
 
   /// See [VRouteElement.name]
   @override
@@ -617,6 +653,7 @@ class VRouteRedirector extends VRouteElement {
   VRouteRedirector({
     required this.path,
     this.redirectTo,
+    this.validate = VRouteElement._defaultCondition,
     Future<void> Function(VRedirector vRedirector)? beforeEnter,
     this.name,
     this.aliases,
