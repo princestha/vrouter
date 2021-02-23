@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:vrouter/vrouter.dart';
 
+bool isLoggedIn = false;
+
+int bottomNavigationBarIndex = 0;
+
 void main() {
   runApp(
     VRouter(
@@ -15,6 +19,8 @@ void main() {
       },
       routes: [
         VStacked(
+          validate: (_) async => !isLoggedIn,
+
           path: '/login',
           widget: LoginWidget(),
         ),
@@ -22,8 +28,10 @@ void main() {
         VStacked(
           key: ValueKey('MyScaffold'),
           widget: MyScaffold(),
+          validate: (_) async => isLoggedIn,
           subroutes: [
             VChild(
+              validate: (_) async => bottomNavigationBarIndex == 1,
               path: '/settings',
               widget: InfoWidget(),
 
@@ -36,9 +44,12 @@ void main() {
               },
             ),
             VChild(
-              path:
-                  '/profile/:username', // :username is a path parameter and can be any value
-              name: 'profile', // We also give a name for easier navigation
+              validate: (_) async => bottomNavigationBarIndex == 0,
+              pathParametersBuilder: (_) async => {'username': 'pop'},
+              path: '/profile/:username',
+              // :username is a path parameter and can be any value
+              name: 'profile',
+              // We also give a name for easier navigation
               widget: ProfileWidget(),
 
               // The path '/profile' might also match this path
@@ -108,9 +119,14 @@ class _LoginWidgetState extends State<LoginWidget> {
             // This FAB is shared and shows hero animations working with no issues
             FloatingActionButton(
               heroTag: 'FAB',
-              onPressed: () => setState(() => (_formKey.currentState.validate())
-                  ? VRouterData.of(context).push('/profile/$name')
-                  : null),
+              onPressed: () {
+                if (_formKey.currentState.validate()) {
+                  isLoggedIn = true;
+                  VRouterData.of(context).update(pathParameters: {'username': name});
+                } else {
+                  setState(() {});
+                }
+              },
               child: Icon(Icons.login),
             )
           ],
@@ -129,29 +145,22 @@ class MyScaffold extends StatelessWidget {
       ),
       bottomNavigationBar: BottomNavigationBar(
         // We check the vChild name to known where we are
-        currentIndex:
-            (VRouteElementData.of(context).vChildName == 'profile') ? 0 : 1,
+        currentIndex: bottomNavigationBarIndex,
         items: [
-          BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline), label: 'Profile'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.info_outline), label: 'Info'),
+          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
+          BottomNavigationBarItem(icon: Icon(Icons.info_outline), label: 'Info'),
         ],
         onTap: (int index) {
-          if (index == 0 &&
-              VRouteElementData.of(context).vChildName != 'profile') {
-            // We use the name to navigate
-            // We can specify the username in a map
-            // Since we are on settings, the username is stored in the VRouter history state
-            VRouterData.of(context).pushNamed('profile', pathParameters: {
-              'username': VRouterData.of(context).historyState
-            });
-          } else if (index == 1 &&
-              VRouteElementData.of(context).vChildName == 'profile') {
+          print(index);
+          print(VRouteElementData.of(context).vChildName);
+          if (index == 0 && VRouteElementData.of(context).vChildName != 'profile') {
+            bottomNavigationBarIndex = index;
+            VRouterData.of(context).pushNamed('profile');//pathParameters: {'username': VRouterData.of(context).historyState});
+          } else if (index == 1 && VRouteElementData.of(context).vChildName == 'profile') {
             // We push the settings and store the username in the VRouter history state
             // We can access this username via the global path parameters (stored in VRoute)
-            VRouterData.of(context).push('/settings',
-                routerState: VRouteData.of(context).pathParameters['username']);
+            bottomNavigationBarIndex = index;
+            VRouterData.of(context).update(routerState: VRouteData.of(context).pathParameters['username']);
           }
         },
       ),
@@ -160,7 +169,10 @@ class MyScaffold extends StatelessWidget {
       // This FAB is shared with login and shows hero animations working with no issues
       floatingActionButton: FloatingActionButton(
         heroTag: 'FAB',
-        onPressed: () => VRouterData.of(context).push('/login'),
+        onPressed: () {
+          isLoggedIn = false;
+          VRouterData.of(context).update();
+        },
         child: Icon(Icons.logout),
       ),
     );
@@ -208,8 +220,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                     borderRadius: BorderRadius.circular(50),
                     color: Colors.blueAccent,
                   ),
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+                  padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
                   child: Text(
                     'Your pressed this button $count times',
                     style: buttonTextStyle,
